@@ -1,82 +1,63 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
+import { AppContext } from '../App';
 import Modal from './Modal';
 import Notification from './Notification';
+import { userApi } from '../services/apiService';
 
 // Formulario de registro
 const RegistrationForm = ({ onRegistered }) => {
+  const { dispatch, state } = useContext(AppContext);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [notification, setNotification] = useState(null);
   
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name.trim() || !email.trim() || !phone.trim() || !password.trim() || !confirmPassword.trim()) {
-      setError('Todos los campos son requeridos.');
+      dispatch({ type: 'SHOW_NOTIFICATION', payload: { message: 'Todos los campos son requeridos.', type: 'error' } });
       return;
     }
     if (password !== confirmPassword) {
-      setError('Las contraseñas no coinciden.');
+      dispatch({ type: 'SHOW_NOTIFICATION', payload: { message: 'Las contraseñas no coinciden.', type: 'error' } });
       return;
     }
     const phoneRegex = /^[0-9]{3}-?[0-9]{3}-?[0-9]{4}$/;
     if (!phoneRegex.test(phone)) {
-      setError('Formato de teléfono inválido. Use 809-XXX-XXXX o similar.');
+      dispatch({ type: 'SHOW_NOTIFICATION', payload: { message: 'Formato de teléfono inválido. Use 809-XXX-XXXX o similar.', type: 'error' } });
       return;
     }
     
     setLoading(true);
     
     try {
-      setNotification({ message: 'Registrando usuario...', type: 'info' });
+      dispatch({ type: 'SHOW_NOTIFICATION', payload: { message: 'Registrando usuario...', type: 'info' } });
       
       // Usar la API para registrar al usuario
-      const response = await fetch('http://localhost:3000/api/users/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          nombre: name,
-          email: email,
-          telefono: phone,
-          password: password,
-          rol: 'client'
-        }),
-      });
+      const userData = {
+        nombre: name,
+        email: email,
+        telefono: phone,
+        password: password,
+        rol: 'client'
+      };
       
-      const data = await response.json();
+      const response = await userApi.register(userData);
       
-      if (response.ok && data.success) {
-        setNotification({ message: 'Usuario registrado exitosamente.', type: 'success' });
-        onRegistered();
-      } else {
-        setError(data.message || 'Error al registrar usuario.');
-      }
+      // Si llegamos aquí, el registro fue exitoso
+      dispatch({ type: 'SHOW_NOTIFICATION', payload: { message: 'Usuario registrado exitosamente.', type: 'success' } });
+      onRegistered();
     } catch (error) {
       console.error('Error en registro:', error);
-      setError('Error de conexión. Verifica que el servidor esté funcionando.');
+      dispatch({ type: 'SHOW_NOTIFICATION', payload: { message: error.message || 'Error al registrar usuario.', type: 'error' } });
     } finally {
       setLoading(false);
     }
   };
-  
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {notification && (
-        <div className={`p-3 rounded-md ${notification.type === 'success' ? 'bg-green-100 text-green-700' : notification.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
-          {notification.message}
-        </div>
-      )}
-      {error && (
-        <div className="p-3 rounded-md bg-red-100 text-red-700">
-          {error}
-        </div>
-      )}
       <div>
         <label htmlFor="reg_name" className="block text-sm font-medium text-slate-700">Nombre Completo</label>
         <input id="reg_name" name="name" type="text" required value={name} onChange={e => setName(e.target.value)} className="mt-1 block w-full p-2.5 border border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="Tu Nombre Completo" />
@@ -95,12 +76,11 @@ const RegistrationForm = ({ onRegistered }) => {
       </div>
       <div>
         <label htmlFor="reg_confirm_password" className="block text-sm font-medium text-slate-700">Confirmar Contraseña</label>
-        <input id="reg_confirm_password" name="confirmPassword" type="password" required value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="mt-1 block w-full p-2.5 border border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="••••••••" />
+        <input id="reg_confirm_password" name="confirm_password" type="password" required value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="mt-1 block w-full p-2.5 border border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="••••••••" />
       </div>
-      <div className="pt-2">
-        <button type="submit" disabled={loading} className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-60 transition-colors">
-          {loading ? 'Registrando...' : 'Registrarse'}
-        </button>
+      <div className="flex justify-end space-x-3 pt-3">
+        <button type="button" onClick={onRegistered} className="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg border border-slate-300 shadow-sm transition-colors">Cancelar</button>
+        <button type="submit" disabled={loading} className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">{loading ? 'Registrando...' : 'Registrarme'}</button>
       </div>
     </form>
   );
@@ -108,109 +88,82 @@ const RegistrationForm = ({ onRegistered }) => {
 
 // Formulario de recuperación de contraseña
 const ForgotPasswordForm = ({ onSent }) => {
+  const { dispatch } = useContext(AppContext);
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [notification, setNotification] = useState(null);
   
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email.trim()) {
-      setError('El email es requerido.');
+      dispatch({ type: 'SHOW_NOTIFICATION', payload: { message: 'Por favor, ingresa tu email.', type: 'error' } });
       return;
     }
     
     setLoading(true);
     
     try {
-      setNotification({ message: 'Enviando solicitud...', type: 'info' });
+      // Llamar a la API para solicitar restablecimiento de contraseña
+      await userApi.forgotPassword({ email });
       
-      // Implementar llamada a API para solicitar recuperación de contraseña
-      const response = await fetch('http://localhost:3000/api/users/forgot-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email }),
-      });
-      
-      const data = await response.json();
-      
-      if (response.ok && data.success) {
-        setNotification({ message: 'Instrucciones enviadas a tu email.', type: 'success' });
-        setTimeout(onSent, 2000);
-      } else {
-        setError(data.message || 'Error al procesar solicitud.');
-      }
+      // Mostrar mensaje de éxito
+      dispatch({ type: 'SHOW_NOTIFICATION', payload: { message: `Si existe una cuenta para ${email}, recibirás un enlace de recuperación.`, type: 'info' } });
+      onSent();
     } catch (error) {
-      console.error('Error al solicitar recuperación:', error);
-      setError('Error de conexión. Verifica que el servidor esté funcionando.');
+      console.error('Error al solicitar recuperación de contraseña:', error);
+      dispatch({ type: 'SHOW_NOTIFICATION', payload: { message: 'Hubo un problema al procesar tu solicitud.', type: 'error' } });
     } finally {
       setLoading(false);
     }
   };
-  
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {notification && (
-        <div className={`p-3 rounded-md ${notification.type === 'success' ? 'bg-green-100 text-green-700' : notification.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
-          {notification.message}
-        </div>
-      )}
-      {error && (
-        <div className="p-3 rounded-md bg-red-100 text-red-700">
-          {error}
-        </div>
-      )}
       <div>
-        <label htmlFor="forgot_email" className="block text-sm font-medium text-slate-700">Email</label>
-        <input id="forgot_email" name="email" type="email" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)} className="mt-1 block w-full p-2.5 border border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="tu@email.com" />
+        <label htmlFor="fp_email" className="block text-sm font-medium text-slate-700">Email Registrado</label>
+        <input id="fp_email" name="email" type="email" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)} className="mt-1 block w-full p-2.5 border border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="tu@email.com" />
       </div>
-      <div className="pt-2">
-        <button type="submit" disabled={loading} className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-60 transition-colors">
-          {loading ? 'Enviando...' : 'Enviar Instrucciones'}
-        </button>
+      <div className="flex justify-end space-x-3 pt-3">
+        <button type="button" onClick={onSent} className="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg border border-slate-300 shadow-sm transition-colors">Cancelar</button>
+        <button type="submit" disabled={loading} className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">{loading ? 'Enviando...' : 'Enviar Enlace'}</button>
       </div>
     </form>
   );
 };
 
-const LoginPage = ({ onLogin }) => {
+const LoginPage = () => {
+  const { state, dispatch } = useContext(AppContext);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const [showRegistration, setShowRegistration] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
-  
-  const handleSubmit = async (e) => {
+
+  // Espacio para funciones adicionales en el futuro
+
+  const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
-
+    
     try {
-      const response = await fetch('http://localhost:3000/api/users/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        // Llamar a onLogin con los datos del usuario Y el token de sesión
-        onLogin(data.user, data.sessionToken); // ← Pasar ambos parámetros
-        
-        // Opcional: mostrar mensaje de éxito
-        console.log('Login exitoso:', data.user.name);
-      } else {
-        setError(data.message || 'Error al iniciar sesión');
-      }
+      // Usar la API para autenticar al usuario
+      const userData = await userApi.login({ email, password });
+      
+      console.log('LoginPage: Datos de usuario recibidos de la API:', userData);
+      
+      // Compatibilidad con nombres de campos en español e inglés
+      const userRole = userData.rol || userData.role || '';
+      const userName = userData.nombre || userData.name || 'Usuario';
+      
+      console.log('LoginPage: Rol detectado:', userRole);
+      
+      // NO establecer initialView aquí - lo haremos en el reducer para centralizar la lógica
+      // Solo enviar los datos del usuario al store
+      dispatch({ type: 'LOGIN', payload: userData });
+      
+      // El mensaje de bienvenida también se maneja en el reducer
+      // para evitar duplicar notificaciones
     } catch (error) {
-      console.error('Error de conexión:', error);
-      setError('Error de conexión. Verifica que el servidor esté funcionando.');
+      console.error('Error en login:', error);
+      dispatch({ type: 'SHOW_NOTIFICATION', payload: { message: 'Credenciales no válidas.', type: 'error' } });
     } finally {
       setLoading(false);
     }
@@ -218,17 +171,15 @@ const LoginPage = ({ onLogin }) => {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center login-page-bg p-4 sm:p-6 lg:p-8">
+      {state.notification && (
+        <Notification message={state.notification.message} type={state.notification.type} id={state.notification.id} />
+      )}
       <div className="w-full max-w-sm">
         <div className="text-center mb-10">
           <h1 className="text-5xl font-extrabold text-slate-800 tracking-tight">Barber<span className="text-indigo-600">RD</span></h1>
         </div>
         <div className="bg-white py-8 px-6 shadow-2xl rounded-xl sm:px-10">
-          {error && (
-            <div className="mb-4 p-3 rounded-md bg-red-100 text-red-700">
-              {error}
-            </div>
-          )}
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleLogin} className="space-y-6">
             <div>
               <label htmlFor="email_login" className="sr-only">Email</label>
               <input id="email_login" name="email" type="email" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)} className="appearance-none block w-full pl-3 pr-3 py-2.5 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="tu@email.com" />
@@ -239,9 +190,7 @@ const LoginPage = ({ onLogin }) => {
             </div>
             <div className="pt-2"></div>
             <div>
-              <button type="submit" disabled={loading} className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-60 transition-colors">
-                {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
-              </button>
+              <button type="submit" className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-60 transition-colors">Iniciar Sesión</button>
             </div>
           </form>
           <div className="mt-6 text-sm text-center space-x-2">
