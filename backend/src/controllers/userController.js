@@ -334,10 +334,10 @@ export const loginUser = async (req, res) => {
     
     if (!isPasswordValid) {
       // Solo para depuración - comprobar si es contraseña de test
-      if ((email === 'admin@barberiaRD.com' && password === 'Admin123!') ||
-          (email === 'owner@barberiaRD.com' && password === 'Admin123!') ||
-          (email === 'barber@barberiaRD.com' && password === 'Barber123!') ||
-          (email === 'cliente@barberiaRD.com' && password === 'Cliente123!')) {
+      if ((email === 'admin@barberiaRD.com' && password === '123456') ||
+    (email === 'owner@barberiaRD.com' && password === '123456') ||
+    (email === 'barber@barberiaRD.com' && password === '123456') ||
+    (email === 'client@barberiaRD.com' && password === '123456')) {
         // Permitir login con contraseñas de test (solo para propósitos de demostración)
         console.log('Login permitido con credenciales de test - SOLO PARA DEMOSTRACIÓN');
         isPasswordValid = true;
