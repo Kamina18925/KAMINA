@@ -94,7 +94,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Connect to database and start server
-const startServer = async () => {
+/*const startServer = async () => {
   try {
     await connectDB();
     app.listen(PORT, () => {
@@ -107,3 +107,5 @@ const startServer = async () => {
 };
 
 startServer();
+*/
+export default app;

@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
-import app from './app.js';
+//import app from './app.js';
+import app from './index.js';
 
 // Cargar variables de entorno
 dotenv.config();

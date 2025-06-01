@@ -42,7 +42,9 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Validar credenciales
+    
+
+    // Buscar usuario por email
     const userResult = await pool.query(
       'SELECT * FROM users WHERE email = $1',
       [email]
@@ -51,30 +53,36 @@ router.post('/login', async (req, res) => {
     if (userResult.rows.length === 0) {
       return res.status(401).json({ 
         success: false, 
-        message: 'Credenciales inválidas' 
+        message: 'Credenciales inválidas (email no encontrado)' 
       });
     }
 
     const user = userResult.rows[0];
-    const isValidPassword = await bcrypt.compare(password, user.password_hash || user.password);
+
+    // Validar password: compara el password recibido con el hash almacenado
+    // El campo correcto es 'password' (según tu ejemplo de resultado)
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    
+    console.log('Password recibido:', password);
+    console.log('Password hash en DB:', user.password);
 
     if (!isValidPassword) {
       return res.status(401).json({ 
         success: false, 
-        message: 'Credenciales inválidas' 
+        message: 'Credenciales inválidas (contraseña incorrecta)' 
       });
     }
 
     // Generar token único
     const sessionToken = crypto.randomBytes(32).toString('hex');
 
-    // Crear sesión en la base de datos
+    // Crear sesión en la base de datos (24 horas de vigencia)
     await pool.query(
       'INSERT INTO sessions (user_id, token, expires_at) VALUES ($1, $2, $3)',
-      [user.id, sessionToken, new Date(Date.now() + 24 * 60 * 60 * 1000)] // 24 horas
+      [user.id, sessionToken, new Date(Date.now() + 24 * 60 * 60 * 1000)]
     );
 
-    // Retornar usuario Y token de sesión
+    // Retornar usuario y token de sesión
     res.json({
       success: true,
       message: 'Login exitoso',
@@ -87,7 +95,7 @@ router.post('/login', async (req, res) => {
         phone: user.phone,
         shop_id: user.shop_id
       },
-      sessionToken: sessionToken // ← Importante: incluir el token
+      sessionToken: sessionToken
     });
   } catch (error) {
     console.error('Error en login:', error);
