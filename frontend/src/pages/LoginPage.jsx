@@ -23,7 +23,15 @@ const LoginPage = ({ onLogin }) => {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
+      // 🔍 AGREGAR MÁS DEBUGGING
+      const responseBody = await response.text();
+      let data = {};
+      try {
+        data = JSON.parse(responseBody);
+        console.log('📥 Response JSON:', data);
+      } catch (e) {
+        console.warn('No se pudo parsear la respuesta como JSON:', e);
+      }
 
       if (response.ok && data.success) {
         // Llamar a onLogin con los datos del usuario Y el token de sesión
